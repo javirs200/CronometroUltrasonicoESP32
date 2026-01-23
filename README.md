@@ -1,5 +1,5 @@
 # CronometroUltrasonicoESP32
-reboot/based on the repository: [CronometroUltrasonico](https://github.com/javirs200/CronometroUltrasonico) but adapted for ESP32 microcontroller.
+based on the repository: [CronometroUltrasonico](https://github.com/javirs200/CronometroUltrasonico) but adapted for ESP32 microcontroller.
 ESP32 code for ultrasonic crono (with bluetooth later)
 
 ## Descripcion
@@ -9,7 +9,10 @@ This project is a simple ultrasonic stopwatch using an ESP32 microcontroller. It
 The initial code is taken from my repository [AzureContainersApp](https://github.com/javirs200/AzureContainersApp) esp32files branch
 and refactored to Standalone ESP32 project.
 
-## planed changes
-- remove wifi parts
-- remove socket parts
-- remove rfid parts
+## Planed changes
+### Changes from the original AzureContainersApp repository:
+- remove wifi conections
+- remove socket communications
+- remove rfid reader
+### New features to be added:
+- add bluetooth Serial Console communication
