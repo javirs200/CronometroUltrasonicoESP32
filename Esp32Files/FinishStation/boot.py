@@ -1,14 +1,32 @@
 import utime
 from hadware.ultrasonic import ultrasonic
+from hadware.leds import led
+from hadware.bluetooth import BLE
 import uasyncio
 
 timestamps = []
 messages = []
+ble = None
+distError = 5  # Default distance error in cm
 
 #--------auxiliar functions----------
+def on_ble_receive(data):
+    """Callback when BLE receives data"""
+    try:
+        message = data.decode('utf-8').strip()
+        print(f"BLE received: {message}")
+        if message.startswith("#dist"):
+            global distError
+            distError = int(message.split("=")[1])
+            print(f"Distance error set to: {distError}")
+    except Exception as e:
+        print(f"Error processing BLE data: {e}")
+
 async def do_send(messages):
         while True:
-            # TODO Send time over bluetooth
+            if ble and ble.is_connected and messages:
+                data = messages.pop(0)
+                ble.send(data)
             await uasyncio.sleep(0.2)
 
 async def measureForever(ult:ultrasonic,timestamps):
@@ -28,16 +46,28 @@ async def measureForever(ult:ultrasonic,timestamps):
 
 #--------main flow----------#
 def main():
+    global ble, distError
 
     #----------- setups ----------
-    print('phase 0 , initialize bluetooth')   
-    # TODO setup bluetooth
+    print('phase 0 , initialize bluetooth and neopixels (8 leds)')   
+    leds = led()
+    leds.flash(1500)
+    leds.turnOff()
     
-    print('phase 1 , setup over bluetooth')   
-    # TODO setup over bluetooth
-    distError = 20
+    # Initialize Bluetooth
+    ble = BLE(name="ESP32-Cronometro", rx_callback=on_ble_receive)
+    utime.sleep_ms(500)
+    leds.flash(300)
 
-    print('phase 2 , initialize ultrasonic')   
+    print('phase 1 , setup over bluetooth')   
+    # Wait 2000 ms to receive distance error parameter over BLE
+    start_time = utime.ticks_ms()
+    while utime.ticks_ms() - start_time < 2000:
+        if ble.is_connected:
+            leds.flash(200)
+        utime.sleep_ms(100)
+    
+    print(f'phase 2 , initialize ultrasonic with distance error: {distError}cm')   
     ult = ultrasonic(distError)
 
     #-------------- main runable -----------

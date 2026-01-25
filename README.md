@@ -16,7 +16,7 @@ and refactored to Standalone ESP32 project.
 - remove rfid reader - done
 ### Redo logic of time measurement 
 - move logic functions - done
-- refactor code - in progress
-- add bluetooth communication - in progress
+- refactor code - in progress 
+- add bluetooth communication - in progress (temporarily added by AI (copilot))
 ### New features to be added:
-- add bluetooth Serial Console communication
+- add bluetooth Serial Console communication - in progress (temporarily added by AI (copilot))
