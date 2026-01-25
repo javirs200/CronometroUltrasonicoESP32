@@ -17,6 +17,8 @@ and refactored to Standalone ESP32 project.
 ### Redo logic of time measurement 
 - move logic functions - done
 - refactor code - in progress 
-- add bluetooth communication - in progress (temporarily added by AI (copilot))
+- add bluetooth communication - done
 ### New features to be added:
-- add bluetooth Serial Console communication - in progress (temporarily added by AI (copilot))
+- add bluetooth Serial Console communication - done
+- configurable parameters via bluetooth - done
+- new time measurement logic - in progress

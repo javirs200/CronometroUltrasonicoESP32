@@ -12,15 +12,21 @@ distError = 5  # Default distance error in cm
 #--------auxiliar functions----------
 def on_ble_receive(data):
     """Callback when BLE receives data"""
+    print("[CALLBACK] BLE data received!")
     try:
         message = data.decode('utf-8').strip()
-        print(f"BLE received: {message}")
+        print(f"[CALLBACK] BLE received: {message}")
         if message.startswith("#dist"):
             global distError
             distError = int(message.split("=")[1])
-            print(f"Distance error set to: {distError}")
+            print(f"[CALLBACK] Distance error set to: {distError}")
+            # Acknowledge setting change
+            if ble:
+                print(f"[CALLBACK] Sending acknowledgement")
+                ble.send(f"Distance error updated to {distError}cm\n")
+                print(f"[CALLBACK] Acknowledgement sent")
     except Exception as e:
-        print(f"Error processing BLE data: {e}")
+        print(f"[CALLBACK] Error processing BLE data: {e}")
 
 async def do_send(messages):
         while True:
@@ -39,57 +45,58 @@ async def measureForever(ult:ultrasonic,timestamps):
                 if ult.dist < ult.treshold  :
                     print("distance less than treshold")
                     # TODO calculate time
-                await utime.sleep_ms(200)                              
+                await uasyncio.sleep_ms(200)                              
         except Exception as e:
             print("Measurement stopped in ultrasonic")
             print(e)
 
 #--------main flow----------#
-def main():
+async def main():
     global ble, distError
 
     #----------- setups ----------
     print('phase 0 , initialize bluetooth and neopixels (8 leds)')   
     leds = led()
-    leds.flash(1500)
+    await leds.flash(leds.WHITE,500)
     leds.turnOff()
     
-    # Initialize Bluetooth
+    # Initialize Bluetooth (aioble handles async internally)
+    print("creating BLE service")
     ble = BLE(name="ESP32-Cronometro", rx_callback=on_ble_receive)
-    utime.sleep_ms(500)
-    leds.flash(300)
+    await uasyncio.sleep_ms(500)
+    # Create tasks for connection wait and LED feedback
 
-    print('phase 1 , setup over bluetooth')   
-    # Wait 2000 ms to receive distance error parameter over BLE
-    start_time = utime.ticks_ms()
-    while utime.ticks_ms() - start_time < 2000:
-        if ble.is_connected:
-            leds.flash(200)
-        utime.sleep_ms(100)
+    # wait until connected
+    while not ble.is_connected:
+        await leds.circle(leds.BLUE, 200)
+    
+    # rapid flash to indicate connection
+    await leds.flash(leds.YELLOW, 100)
+    # infinite one led circle to indicate ready
     
     print(f'phase 2 , initialize ultrasonic with distance error: {distError}cm')   
-    ult = ultrasonic(distError)
+    # ult = ultrasonic(distError)
 
-    #-------------- main runable -----------
+    # #-------------- main runable -----------
     try:   
         print('wait to start 1000 ms')
-        utime.sleep_ms(1000)
-        print('phase 3 , ifinite loop ultrasonic')
-        loop = uasyncio.get_event_loop()
-        try:
-            utime.sleep_ms(1000)
-            # run coroutines concurrently
-            loop.create_task(measureForever(ult,timestamps))
-            loop.create_task(do_send(messages))
-            loop.run_forever()
-        except Exception as e:
-            print('Exception ',e)
-            loop.stop()
-            loop.close()
-            pass        
-    except:
-        print('end')
-        pass   
+        await uasyncio.sleep_ms(1000)
+        print('phase 3 , infinite loop ultrasonic')
+
+        # Create and run coroutines concurrently
+        await uasyncio.gather(
+            # measureForever(ult, timestamps),
+            do_send(messages)
+        )
+    except Exception as e:
+        print('Exception:', e)
+    finally:
+        print('Cleaning up')
+        if ble:
+            ble.close()
 
 if __name__ == '__main__':
-    main()
+    try:
+        uasyncio.run(main())
+    except Exception as e:
+        print('Error running main:', e)

@@ -5,8 +5,6 @@ from uasyncio import sleep
 import machine
 from machine import RTC
 
-from utils.timeConverter import datetime_to_nanoseconds
-
 class ultrasonic:
     def getMeasureUltrasonic(self):
         distance=0
