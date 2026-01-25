@@ -1,16 +1,26 @@
 from machine import Pin
-from utime import sleep
+# from utime import sleep
+from neopixel import NeoPixel
+
+# neopixel led control
 
 class led:
     def __init__(self):
-        self.led=Pin(2,Pin.OUT) # onboard led
-        self.led.value(0)
-
+        self.pin=Pin(0,Pin.OUT) 
+        self.np = NeoPixel(self.pin, 8)   
+        for i in range(0,8):
+            self.np[i] = (0, 0, 0) 
+        self.np.write()
+        
     def turnOn(self):
-        self.led.value(1)
+        for i in range(0,8):
+            self.np[i] = (255, 255, 255)
+        self.np.write()
 
     def turnOff(self):
-        self.led.value(0)
+        for i in range(0,8):
+            self.np[i] = (0, 0, 0)
+        self.np.write()
         
     def flash(self,speed):
         for i in range(3):
@@ -18,3 +28,16 @@ class led:
             self.turnOn()
             sleep(speed)
             self.turnOff()
+
+    def changeOne(self,position:int,color:tuple[int,int,int]):
+        self.np[position] = color
+        self.np.write()
+        pass
+
+    def changeOneWithoutWrite(self,position:int,color:tuple[int,int,int]):
+        self.np[position] = color
+        pass
+
+    def writeToPixels(self):
+        self.np.write()
+        pass
