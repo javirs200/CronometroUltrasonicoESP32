@@ -11,8 +11,12 @@ and refactored to Standalone ESP32 project.
 
 ## Planed changes
 ### Changes from the original AzureContainersApp repository:
-- remove wifi conections
-- remove socket communications
-- remove rfid reader
+- remove wifi conections - done
+- remove socket communications - done
+- remove rfid reader - done
+### Redo logic of time measurement 
+- move logic functions - done
+- refactor code - in progress
+- add bluetooth communication - in progress
 ### New features to be added:
 - add bluetooth Serial Console communication
