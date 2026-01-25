@@ -22,3 +22,6 @@ and refactored to Standalone ESP32 project.
 - add bluetooth Serial Console communication - done
 - configurable parameters via bluetooth - done
 - new time measurement logic - in progress
+
+## External libaries
+- [aioble](https://github.com/micropython/micropython-lib/tree/master/micropython/bluetooth/aioble)
