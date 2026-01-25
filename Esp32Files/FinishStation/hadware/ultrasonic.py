@@ -28,7 +28,7 @@ class ultrasonic:
         distance=self.VelocidadSonido*pingTime
         return int(distance)
     
-    def __init__(self):
+    def __init__(self,distError:int):
 
         self.rtc = machine.RTC()
 
@@ -42,7 +42,10 @@ class ultrasonic:
 
         print("esp32 ultrasonic init")
         farMeasure = 0
-        distError = 20
+        
+        if (distError == None):
+            distError = 20
+
         for i in range(0,4):
             m = self.getMeasureUltrasonic()
             print("claibration " + str(m))
@@ -56,20 +59,3 @@ class ultrasonic:
         print("treshold " + str(self.treshold))
         print("farMeasure " + str(farMeasure))  
         print("ready to measures")
-
-    async def measureForever(self,timestamps):
-        try:
-            while True:
-                self.dist = self.getMeasureUltrasonic()
-                print("distance measured " + str(self.dist) + "cm")
-                print("timestamps ",timestamps)
-                if self.dist < self.treshold  :
-                    print("distance less than treshold")
-                    rtctimetuple = self.rtc.datetime()
-                    #print("rtc time tuple ",rtctimetuple)
-                    nanoseconds = datetime_to_nanoseconds(rtctimetuple)
-                    timestamps.append(nanoseconds)
-                await sleep(0.2)                              
-        except Exception as e:
-            print("Measurement stopped in ultrasonic")
-            print(e)
