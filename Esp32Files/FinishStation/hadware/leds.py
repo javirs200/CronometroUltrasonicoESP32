@@ -1,5 +1,5 @@
 from machine import Pin
-# from utime import sleep
+from utime import sleep_ms
 from neopixel import NeoPixel
 
 # neopixel led control
@@ -24,9 +24,9 @@ class led:
         
     def flash(self,speed):
         for i in range(3):
-            sleep(speed)
+            sleep_ms(speed)
             self.turnOn()
-            sleep(speed)
+            sleep_ms(speed)
             self.turnOff()
 
     def changeOne(self,position:int,color:tuple[int,int,int]):
