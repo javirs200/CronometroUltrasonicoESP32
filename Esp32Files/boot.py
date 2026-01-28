@@ -7,6 +7,7 @@ import uasyncio
 timestamps = []
 messages = []
 ble = None
+leds = None
 distError = 5  # Default distance error in cm
 
 #--------auxiliar functions----------
@@ -16,6 +17,9 @@ def on_ble_receive(data):
     try:
         message = data.decode('utf-8').strip()
         print(f"[CALLBACK] BLE received: {message}")
+        # Flash LED when receiving data
+        if leds:
+            uasyncio.create_task(leds.flash(leds.BLUE, 100))
         if message.startswith("#dist"):
             global distError
             distError = int(message.split("=")[1])
@@ -24,6 +28,7 @@ def on_ble_receive(data):
             if ble:
                 print(f"[CALLBACK] Sending acknowledgement")
                 ble.send(f"Distance error updated to {distError}cm\n")
+                leds.flash(leds.GREEN, 100)
                 print(f"[CALLBACK] Acknowledgement sent")
     except Exception as e:
         print(f"[CALLBACK] Error processing BLE data: {e}")
@@ -52,7 +57,7 @@ async def measureForever(ult:ultrasonic,timestamps):
 
 #--------main flow----------#
 async def main():
-    global ble, distError
+    global ble, distError, leds
 
     #----------- setups ----------
     print('phase 0 , initialize bluetooth and neopixels (8 leds)')   
@@ -71,7 +76,7 @@ async def main():
         await leds.circle(leds.BLUE, 200)
     
     # rapid flash to indicate connection
-    await leds.flash(leds.YELLOW, 100)
+    await leds.flash(leds.GREEN, 100)
     # infinite one led circle to indicate ready
     
     print(f'phase 2 , initialize ultrasonic with distance error: {distError}cm')   
