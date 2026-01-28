@@ -30,7 +30,7 @@ class ultrasonic:
 
         self.rtc = machine.RTC()
 
-        self.PIN_TRIGGER=Pin(4,Pin.OUT,0)
+        self.PIN_TRIGGER=Pin(12,Pin.OUT,0)
         self.PIN_ECHO=Pin(14,Pin.IN,0)
 
         # velocidad del sonido en atmosfera terrestre 343.2 m/s
