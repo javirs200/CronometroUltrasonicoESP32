@@ -26,6 +26,12 @@ class led:
             self.np[i] = self.color
         self.np.write()
 
+    def turnOnPluse(self, color:tuple[int,int,int], intensity=50):
+        self.color = (int(color[0]*intensity/100),int(color[1]*intensity/100),int(color[2]*intensity/100))
+        for i in [1,3,5,7]:
+            self.np[i] = self.color
+        self.np.write()
+
     def turnOff(self):
         for i in range(0,8):
             self.np[i] = (0, 0, 0)
@@ -35,6 +41,13 @@ class led:
         for i in range(3):
             await sleep_ms(speed)
             self.turnOn(color,intensity=50)
+            await sleep_ms(speed)
+            self.turnOff()
+
+    async def pluseFlash(self,color:tuple[int,int,int],speed):
+        for i in range(3):
+            await sleep_ms(speed)
+            self.turnOnPluse(color,intensity=50)
             await sleep_ms(speed)
             self.turnOff()
 
