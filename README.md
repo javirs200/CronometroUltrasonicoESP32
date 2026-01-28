@@ -1,36 +1,64 @@
-# CronometroUltrasonicoESP32
-based on the repository: [CronometroUltrasonico](https://github.com/javirs200/CronometroUltrasonico) but adapted for ESP32 microcontroller.
-ESP32 code for ultrasonic crono (with bluetooth later)
+# Ultrasonic Stopwatch for ESP32
 
-## Descripcion
-This project is a simple ultrasonic stopwatch using an ESP32 microcontroller. It measures the time taken to a moving object to pass between ultrasonic sensor.
+A high-precision ultrasonic stopwatch running on the **ESP32 microcontroller**, featuring Bluetooth connectivity and configurable measurement modes. Designed for timing miniZ racecars across indoor home circuits, home rally stages, and competitive racing courses with accurate lap timing and checkpoint measurements.
 
-## Reference Code
-The initial code is taken from my repository [AzureContainersApp](https://github.com/javirs200/AzureContainersApp) esp32files branch
-and refactored to Standalone ESP32 project.
+**Original project:** Based on [CronometroUltrasonico](https://github.com/javirs200/CronometroUltrasonico), adapted and optimized for ESP32.
 
-## Planed changes
-### Changes from the original AzureContainersApp repository:
-- remove wifi conections - done
-- remove socket communications - done
-- remove rfid reader - done
+---
 
-### Redo logic of time measurement 
-- move logic functions - done
-- refactor code - in progress 
-- add bluetooth communication - done
+## Overview
 
-### backlog
-- at moment Bluetooth communication is mandatory , add option for start without bluetooth at certain time after power on. 
-- if no bluetooth connection after x seconds, store results in internal flash memory.
+This project provides a standalone, portable ultrasonic timing solution with the following capabilities:
+- **Ultrasonic Sensing:** Precise time measurement using a single ultrasonic sensor to detect racecars
+- **Bluetooth Communication:** Real-time data transmission and remote control via BLE
+- **Configurable Parameters:** Adjust sensor behavior and timing modes via Bluetooth console
+- **Internal Storage:** Flash memory storage for measurement results when offline
+- **Multiple Measurement Modes:** Support for various timing scenarios
 
-### New features to be added:
-- add bluetooth Serial Console communication - done
-- configurable parameters via bluetooth - done
-- new time measurement logic - done
-- new measurement modes implementation - done
-- add internal flash memory storage of results - pending
-- add option for start without bluetooth connection - pending
+---
 
-## External libaries
-- [aioble](https://github.com/micropython/micropython-lib/tree/master/micropython/bluetooth/aioble)
+## Original Source
+
+This project evolved from the [AzureContainersApp](https://github.com/javirs200/AzureContainersApp) repository (esp32files branch), which was refactored into this dedicated, standalone ESP32 application.
+
+---
+
+## Project Status
+
+### ✅ Completed Features
+- Removed dependencies: WiFi, socket communication, RFID reader
+- Refactored logic functions for modularity and performance
+- Bluetooth Serial Console communication
+- Configurable parameters via Bluetooth
+- New time measurement logic implementation
+- Multiple measurement modes
+- Code refactored as standalone ESP32 project
+
+### 🔄 In Progress
+- Code optimization and testing
+
+### ⏳ Planned Features
+- Internal flash memory storage of results
+- Standalone operation mode (start without Bluetooth after power-on delay)
+- Optional Bluetooth requirement (fallback to offline mode after timeout)
+
+---
+
+## Project Structure
+
+```
+Esp32Files/
+├── boot.py              # Entry point configuration
+└── hadware/
+    ├── bluetooth.py     # Bluetooth communication module
+    ├── leds.py          # LED control module
+    └── ultrasonic.py    # Single ultrasonic sensor interface
+```
+
+---
+
+## Dependencies
+
+- [aioble](https://github.com/micropython/micropython-lib/tree/master/micropython/bluetooth/aioble) - MicroPython Bluetooth Low Energy library
+
+---
