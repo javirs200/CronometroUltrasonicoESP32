@@ -31,3 +31,6 @@ and refactored to Standalone ESP32 project.
 - new measurement modes implementation - done
 - add internal flash memory storage of results - pending
 - add option for start without bluetooth connection - pending
+
+## External libaries
+- [aioble](https://github.com/micropython/micropython-lib/tree/master/micropython/bluetooth/aioble)
