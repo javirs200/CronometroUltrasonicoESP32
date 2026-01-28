@@ -21,7 +21,7 @@ and refactored to Standalone ESP32 project.
 - add bluetooth communication - done
 
 ### backlog
-- at moment Bluetooth communication is mandatory , add option for start without bluetooth at certaun time after power on. 
+- at moment Bluetooth communication is mandatory , add option for start without bluetooth at certain time after power on. 
 - if no bluetooth connection after x seconds, store results in internal flash memory.
 
 ### New features to be added:
