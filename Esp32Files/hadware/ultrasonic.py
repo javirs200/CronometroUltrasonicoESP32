@@ -50,10 +50,10 @@ class ultrasonic:
             if(m > farMeasure):
                 farMeasure = m
         
-            self.treshold = (farMeasure - distError)
+            self.distance_threshold = (farMeasure - distError)
 
-            self.dist = (farMeasure + distError)
+            self.max_distance = (farMeasure + distError)
 
-        print("treshold " + str(self.treshold))
+        print("distance_threshold " + str(self.distance_threshold))
         print("farMeasure " + str(farMeasure))  
         print("ready to measures")
