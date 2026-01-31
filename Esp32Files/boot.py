@@ -116,6 +116,7 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                     
                     if on_sensor:
                         # Still on sensor, do nothing
+                        print("Still on sensor, waiting for removal...")
                         pass
                     else:
                         on_sensor = True
@@ -127,44 +128,46 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                             messages.append(message)
                             print(f"Sent message: {message.strip()}")
                             if leds:
-                                await leds.crossFlash(leds.GREEN, 50)
-                    
-                    # if not finished:
-                    #     if leds:
-                    #         await leds.pluseFlash(leds.YELLOW, 20)
+                                await leds.pluseFlash(leds.GREEN, 50)
+                        elif started and not finished:
+                            temporal_time = utime.ticks_ms()
+                            current_time = utime.diff(temporal_time, previous_time)
+                            previous_time = temporal_time
 
-                    #     if not started:
-                    #         current_time = temporal_time
-                    #         # Debounce delay
-                    #         await uasyncio.sleep_ms(100)
-                    #     else:
-                    #         # Already started, update current time
-                    #         current_time = utime.diff(temporal_time, previous_time)
-                    #         previous_time = temporal_time
+                            if leds:
+                                await leds.pluseFlash(leds.YELLOW, 50)
+
+                            if mode == "rally":
+                                if current_try < tries:
+                                    current_try += 1
+                                    message = f"TRY,{current_try},{current_time}\n"
+                                    messages.append(message)
+                                    print(f"Sent message: {message.strip()}")
+                                else:
+                                    finished = True
+                                    message = f"FINISHED,Total Tries:{current_try}\n"
+                                    messages.append(message)
+                                    print(f"Sent message: {message.strip()}")
+                                    if leds:
+                                        await leds.flash(leds.GREEN, 100)
+
+                            elif mode == "circuit":
+                                if current_lap < laps:
+                                    current_lap += 1
+                                    message = f"LAP,{current_lap},{current_time}\n"
+                                    messages.append(message)
+                                    print(f"Sent message: {message.strip()}")
+                                else:
+                                    finished = True
+                                    message = f"FINISHED,Total Laps:{current_lap}\n"
+                                    messages.append(message)
+                                    print(f"Sent message: {message.strip()}")
+                                    if leds:
+                                        await leds.flash(leds.GREEN, 100)
+
+                            if leds:
+                                await leds.pluseFlash(leds.GREEN, 50)
                         
-                    #     if mode == "rally":
-                    #         if current_try < tries:
-                    #             current_try += 1
-                    #             message = f"TRY,{current_try},{current_time}\n"
-                    #             messages.append(message)
-                    #             print(f"Sent message: {message.strip()}")
-                    #         else:
-                    #             finished = True
-                    #             message = f"FINISHED,Total Tries:{current_try}\n"
-                    #             messages.append(message)
-                    #             print(f"Sent message: {message.strip()}")
-
-                    #     elif mode == "circuit":
-                    #         if current_lap < laps:
-                    #             current_lap += 1
-                    #             message = f"LAP,{current_lap},{current_time}\n"
-                    #             messages.append(message)
-                    #             print(f"Sent message: {message.strip()}")
-                    #         else:
-                    #             finished = True
-                    #             message = f"FINISHED,Total Laps:{current_lap}\n"
-                    #             messages.append(message)
-                    #             print(f"Sent message: {message.strip()}")
 
                 await uasyncio.sleep_ms(500)
                                     
@@ -179,7 +182,7 @@ async def main():
     #----------- setups ----------
     print('phase 0 , initialize bluetooth and neopixels (8 leds)')   
     leds = led()
-    await leds.flash(leds.WHITE,500)
+    await leds.flash(leds.WHITE,200)
     leds.turnOff()
     
     # Initialize Bluetooth (aioble handles async internally)
@@ -188,7 +191,7 @@ async def main():
     await uasyncio.sleep_ms(500)
     # Create tasks for connection wait and LED feedback
 
-    # wait until connected
+    # # wait until connected
     while not ble.is_connected:
         await leds.circle(leds.BLUE, 200)
     
@@ -198,6 +201,8 @@ async def main():
     
     print(f'phase 2 , initialize ultrasonic with distance error: {distError}cm')   
     ult = ultrasonic(distError)
+
+    print('ultrasonic initialized with distance threshold: ' + str(ult.distance_threshold))
 
     # #-------------- main runable -----------
     try:   
