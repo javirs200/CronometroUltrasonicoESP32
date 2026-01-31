@@ -31,6 +31,23 @@ current_time = 0
 previous_time = 0
 
 #--------auxiliar functions---------
+
+def reset_state():
+    """Reset the state variables for a new measurement session"""
+    global started, finished
+    global current_try, current_lap
+    started = False
+    finished = False
+    current_try = 0
+    current_lap = 0
+
+def format_time(ms:int) -> str:
+    """Format time in milliseconds to a string MM:SS.sss"""
+    minutes = ms // 60000
+    seconds = (ms % 60000) // 1000
+    milliseconds = ms % 1000
+    return f"{minutes:02}:{seconds:02}.{milliseconds:03}"
+
 def on_ble_receive(data):
     """Callback when BLE receives data"""
     print("[CALLBACK] BLE data received!")
@@ -65,6 +82,9 @@ def on_ble_receive(data):
                 elif command == "#config":
                     response = (f"Current Config - Distance Error: {distError}cm, "
                                 f"Mode: {mode}, Laps: {laps}, Tries: {tries}\n")
+                elif command == "#reset":
+                    reset_state()
+                    response = "State has been reset for a new session.\n"
                 else:
                     # usage instructions
                     response = ("Invalid command. Use:\n"
@@ -131,14 +151,14 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
 
                 previous_time = temporal_time
 
-                print("[DEBUG] Current Time: " + str(current_time) + " ms |" + str(wait_time) + " ms")
+                # print("[DEBUG] Current Time: " + str(current_time) + " ms |" + str(wait_time) + " ms")
+
+                if current_time < wait_time:
+                    on_sensor = True
+                else:
+                    on_sensor = False
 
                 if not on_sensor:
-
-                    if current_time < wait_time:
-                        on_sensor = True
-                    else:
-                        on_sensor = False
                         
                     # Leaved sensor or pass infront , send feedback to BT 
                     if not started and not finished:
@@ -153,37 +173,52 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                         messages.append(message)
 
                         # prompt actual situation
-                        print(f"started and not finished - mode: {mode}, tries: {tries}, laps: {laps}, current_try: {current_try}, current_lap: {current_lap}")
+                        # print(f"[DEBUG] started and not finished - mode: {mode}, tries: {tries}, laps: {laps}, current_try: {current_try}, current_lap: {current_lap}")
 
                         if leds:
-                            await leds.pluseFlash(leds.YELLOW, 50)
+                            await leds.pluseFlash(leds.YELLOW, 100)
 
                         if mode == "rally":
-                            if current_try < tries:
+
+                            if current_try < tries-1:
                                 current_try += 1
-                                message = f"TRY,{current_try},{current_time}\n"
+                                message = f"TRY {current_try}  Time:  {format_time(current_time)}\n"
                             else:
+
+                                if not finished:
+                                    # finishing message
+                                    message = f"TRY {current_try+1}  Time:   {format_time(current_time)}\n"
+                                    messages.append(message)
+
                                 finished = True
-                                message = f"FINISHED,Total Tries:{current_try}\n"
+
+                                message = f"FINISHED !!!\n"
+
                                 if leds:
                                     await leds.flash(leds.GREEN, 100)
 
                         elif mode == "circuit":
-                            if current_lap < laps:
+
+                            if current_lap < laps-1:
                                 current_lap += 1
-                                message = f"LAP,{current_lap},{current_time}\n"
+                                message = f"LAP:  {current_lap}  Time:  {format_time(current_time)}\n"
                             else:
+
+                                if not finished:
+                                    # finishing message
+                                    message = f"LAP: {current_lap+1}  Time:  {format_time(current_time)}\n"
+                                    messages.append(message)
+
                                 finished = True
-                                message = f"FINISHED,Total Laps:{current_lap}\n"
+
+                                message = f"FINISHED !!!\n"
+
                                 if leds:
                                     await leds.flash(leds.GREEN, 100)
 
-                        if leds:
-                            await leds.pluseFlash(leds.GREEN, 50)
-                            
+                    # always queue the message
                     messages.append(message)
-                    print(f"Sent message: {message.strip()}")
-
+                    
                 else:
                     
                     print("Object still in front of sensor, waiting for removal.")
