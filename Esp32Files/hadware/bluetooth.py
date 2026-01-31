@@ -129,7 +129,6 @@ class BLE:
         if self.is_connected and self.connection:
             if isinstance(data, str):
                 data = data.encode()
-            
             try:
                 # Update the TX characteristic and notify
                 self.tx_char.write(data, send_update=True)

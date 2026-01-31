@@ -28,7 +28,7 @@ class led:
 
     def turnOnPluse(self, color:tuple[int,int,int], intensity=50):
         self.color = (int(color[0]*intensity/100),int(color[1]*intensity/100),int(color[2]*intensity/100))
-        for i in [1,3,5,7]:
+        for i in [0,2,4,6]:
             self.np[i] = self.color
         self.np.write()
 
