@@ -1,11 +1,8 @@
 from machine import Pin
 import utime
-from uasyncio import sleep
-
-import machine
-from machine import RTC
 
 class ultrasonic:
+
     def getMeasureUltrasonic(self):
         distance=0
         self.PIN_TRIGGER.value(0)
@@ -28,8 +25,6 @@ class ultrasonic:
     
     def __init__(self,distError:int):
 
-        self.rtc = machine.RTC()
-
         self.PIN_TRIGGER=Pin(12,Pin.OUT,0)
         self.PIN_ECHO=Pin(14,Pin.IN,0)
 
@@ -44,6 +39,8 @@ class ultrasonic:
         if (distError == None):
             distError = 20
 
+        print("claibration " + str(m))
+
         for i in range(0,4):
             m = self.getMeasureUltrasonic()
             print("claibration " + str(m))
@@ -53,6 +50,9 @@ class ultrasonic:
             self.distance_threshold = (farMeasure - distError)
 
             self.max_distance = (farMeasure + distError)
+
+            utime.sleep_us(500)
+
 
         print("distance_threshold " + str(self.distance_threshold))
         print("farMeasure " + str(farMeasure))  
