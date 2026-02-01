@@ -50,10 +50,10 @@ def format_time(ms:int) -> str:
 
 def on_ble_receive(data):
     """Callback when BLE receives data"""
-    print("[CALLBACK] BLE data received!")
+    # print("[CALLBACK] BLE data received!")
     try:
         message = data.decode('utf-8').strip()
-        print(f"[CALLBACK] BLE received: {message}")
+        # print(f"[CALLBACK] BLE received: {message}")
         # Flash LED when receiving data
         if leds:
             uasyncio.create_task(leds.flash(leds.BLUE, 100))
@@ -97,14 +97,14 @@ def on_ble_receive(data):
                 if ble:
                     ble.send(response)
                     uasyncio.create_task(leds.pluseFlash(leds.GREEN, 100))
-                    print(f"[CALLBACK] Acknowledgement sent: {response.strip()}")
+                    # print(f"[CALLBACK] Acknowledgement sent: {response.strip()}")
 
             except (ValueError, IndexError):
                 error_msg = "Invalid command format. Use: #command=value\n"
                 if ble:
                     ble.send(error_msg)
                 uasyncio.create_task(leds.flash(leds.RED, 100))
-                print(f"[CALLBACK] Error: {error_msg.strip()}")
+                # print(f"[CALLBACK] Error: {error_msg.strip()}")
     except Exception as e:
         print(f"[CALLBACK] Error processing BLE data: {e}")
 
@@ -113,7 +113,7 @@ async def do_send(messages):
 
     global ble
 
-    print("Starting BLE send coroutine...")
+    # print("Starting BLE send coroutine...")
 
     while True:
         # Send messages if connected and there are messages to send
@@ -133,17 +133,17 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
     # if holded infront of sensor wait until removed
     on_sensor = False
 
-    print("Starting ultrasonic measurements...")
+    # print("Starting ultrasonic measurements...")
 
     try:
         while True:
 
             distance = ult.getMeasureUltrasonic()
-            print("Distance: " + str(distance) + " cm |" + "Threshold: " + str(ult.distance_threshold) + " cm")
+            # print("Distance: " + str(distance) + " cm |" + "Threshold: " + str(ult.distance_threshold) + " cm")
 
             if distance < ult.distance_threshold:
 
-                print("Object detected within threshold.")
+                # print("Object detected within threshold.")
 
                 temporal_time = utime.ticks_ms()
 
@@ -151,7 +151,7 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
 
                 previous_time = temporal_time
 
-                # print("[DEBUG] Current Time: " + str(current_time) + " ms |" + str(wait_time) + " ms")
+                # # print("[DEBUG] Current Time: " + str(current_time) + " ms |" + str(wait_time) + " ms")
 
                 if current_time < wait_time:
                     on_sensor = True
@@ -165,7 +165,7 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                         started = True
                         message = "STARTED\n"
                         if leds:
-                            await leds.pluseFlash(leds.GREEN, 50)
+                            await leds.pluseFlash(leds.GREEN, 100)
 
                     elif started and not finished:
 
@@ -173,7 +173,7 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                         messages.append(message)
 
                         # prompt actual situation
-                        # print(f"[DEBUG] started and not finished - mode: {mode}, tries: {tries}, laps: {laps}, current_try: {current_try}, current_lap: {current_lap}")
+                        # # print(f"[DEBUG] started and not finished - mode: {mode}, tries: {tries}, laps: {laps}, current_try: {current_try}, current_lap: {current_lap}")
 
                         if leds:
                             await leds.pluseFlash(leds.YELLOW, 100)
@@ -220,28 +220,28 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                     messages.append(message)
                     
                 else:
+                    # still on sensor , do not register multiple times
+                    pass
                     
-                    print("Object still in front of sensor, waiting for removal.")
-
-            await uasyncio.sleep_ms(500)
+            await uasyncio.sleep_ms(50)
                                 
     except Exception as e:
         print("Measurement stopped in ultrasonic")
-        print(e)
+        # print(e)
 
 #--------main flow----------#
 async def main():
     global ble, distError, leds
 
     #----------- setups ----------
-    print('phase 0 , initialize neopixels (8 leds)')   
+    # print('phase 0 , initialize neopixels (8 leds)')   
     leds = led()
     await leds.flash(leds.WHITE,200)
     leds.turnOff()
 
     await uasyncio.sleep_ms(500)
 
-    print('phase 1 , initialize ultrasonic sensor')   
+    # print('phase 1 , initialize ultrasonic sensor')   
     await leds.pluseFlash(leds.YELLOW,200)
     ult = ultrasonic()
     leds.turnOff()
@@ -251,12 +251,12 @@ async def main():
     await uasyncio.sleep_ms(500)
     
     # Initialize Bluetooth (aioble handles async internally)
-    print("creating BLE service")
+    # print("creating BLE service")
     ble = BLE(name="ESP32-Cronometro", rx_callback=on_ble_receive)
     await leds.flash(leds.BLUE,100)
     leds.turnOff()
     
-    print('phase 2 , calibrate ultrasonic sensor , plese conect via bluetooth to configure')
+    # print('phase 2 , calibrate ultrasonic sensor , plese conect via bluetooth to configure')
     # # wait until connected
     while not ble.is_connected:
         await leds.circle(leds.BLUE, 200)
@@ -268,7 +268,7 @@ async def main():
     # infinite one led circle to indicate ready
     await uasyncio.sleep_ms(500)
 
-    print('plese send error setting ')
+    # print('plese send error setting ')
     while distError == 0:
         await leds.circle(leds.YELLOW, 200)
 
@@ -279,13 +279,13 @@ async def main():
     await leds.flash(leds.YELLOW,200)
     leds.turnOff()
 
-    print('ultrasonic initialized with distance threshold: ' + str(ult.distance_threshold) + ' cm')
+    # print('ultrasonic initialized with distance threshold: ' + str(ult.distance_threshold) + ' cm')
 
     await uasyncio.sleep_ms(500)
 
     # #-------------- main runable -----------
     try:   
-        print('phase 3 , infinite loop ultrasonic')
+        # print('phase 3 , infinite loop ultrasonic')
 
         # Create and run coroutines concurrently
         await uasyncio.gather(
@@ -296,7 +296,7 @@ async def main():
     except Exception as e:
         print('Exception:', e)
     finally:
-        print('Cleaning up')
+        # print('Cleaning up')
         if ble:
             ble.close()
 
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     # set pin 12 to low , boot fails if high
     pin12 = Pin(12,Pin.OUT,Pin.PULL_DOWN)
     pin12.value(0)
-    print('Booting...')
+    # print('Booting...')
 
     try:
         uasyncio.run(main())

@@ -50,7 +50,7 @@ class ultrasonic:
     
     def __init__(self):
 
-        print("esp32 ultrasonic init")
+        # print("esp32 ultrasonic init")
 
         self.PIN_TRIGGER=Pin(12,Pin.OUT,Pin.PULL_DOWN)
         self.PIN_TRIGGER.value(0)
@@ -66,4 +66,4 @@ class ultrasonic:
         m1 = self.getMeasureUltrasonic()
         m2 = self.getMeasureUltrasonic()
 
-        print("medidas dummy " + str(m1) + " " + str(m2))
+        # print("medidas dummy " + str(m1) + " " + str(m2))

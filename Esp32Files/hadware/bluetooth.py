@@ -46,20 +46,20 @@ class BLE:
 
     def start_advertising(self):
         """Start BLE advertising"""
-        print(f"Starting BLE advertising: {self.name}")
+        # print(f"Starting BLE advertising: {self.name}")
         self._advertising_task = asyncio.create_task(self._advertise())
 
     async def _advertise(self):
         """Advertise and handle connections"""
         while True:
             try:
-                print(f"Waiting for connection: {self.name}")
+                # print(f"Waiting for connection: {self.name}")
                 self.connection = await aioble.advertise(
                     _ADV_INTERVAL_US,
                     name=self.name,
                     services=[_UART_UUID],
                 )
-                print(f"Connection established: {self.name}")
+                # print(f"Connection established: {self.name}")
                 self.is_connected = True
                 
                 if self._connect_callback:
@@ -69,33 +69,33 @@ class BLE:
                 await self._handle_connection()
                 
             except asyncio.CancelledError:
-                print(f"Advertising cancelled: {self.name}")
+                # print(f"Advertising cancelled: {self.name}")
                 break
             except Exception as e:
-                print(f"Advertising error: {e}")
+                # print(f"Advertising error: {e}")
                 await asyncio.sleep_ms(1000)
 
     async def _handle_connection(self):
         """Handle an active connection"""
         try:
-            print(f"[CONN] Connection handler started")
+            # print(f"[CONN] Connection handler started")
             # Start listening for RX writes
             self._rx_task = asyncio.create_task(self._rx_listen())
-            print(f"[CONN] RX listener task created")
+            # print(f"[CONN] RX listener task created")
             
             # Keep connection alive
             while self.is_connected:
                 await asyncio.sleep_ms(100)
                 
         except asyncio.CancelledError:
-            print(f"[CONN] Connection handler cancelled")
+            # print(f"[CONN] Connection handler cancelled")
             pass
         finally:
             if self._rx_task:
                 self._rx_task.cancel()
             self.is_connected = False
             self.connection = None
-            print(f"[CONN] Connection closed: {self.name}")
+            # print(f"[CONN] Connection closed: {self.name}")
             
             if self._disconnect_callback:
                 self._disconnect_callback()
@@ -108,16 +108,16 @@ class BLE:
                     # Wait for write on RX characteristic
                     # written() returns (connection, data) when capture=True
                     conn, data = await self.rx_char.written(timeout_ms=5000)
-                    print(f"[RX_LISTEN] Data received: {data}")
+                    # print(f"[RX_LISTEN] Data received: {data}")
                     if self.rx_callback:
-                        print(f"[RX_LISTEN] Calling callback with data: {data}")
+                        # print(f"[RX_LISTEN] Calling callback with data: {data}")
                         self.rx_callback(data)
                 except asyncio.TimeoutError:
                     # Timeouts are normal, just continue listening
-                    print(f"[RX_LISTEN] Timeout waiting for data")
+                    # print(f"[RX_LISTEN] Timeout waiting for data")
                     continue
                 except Exception as e:
-                    print(f"[RX_LISTEN] Error: {e}")
+                    # print(f"[RX_LISTEN] Error: {e}")
                     await asyncio.sleep_ms(100)
         except asyncio.CancelledError:
             print("[RX_LISTEN] Cancelled")
@@ -132,7 +132,7 @@ class BLE:
             try:
                 # Update the TX characteristic and notify
                 self.tx_char.write(data, send_update=True)
-                print(f"Sent: {data}")
+                # print(f"Sent: {data}")
             except Exception as e:
                 print(f"Send error: {e}")
         else:
@@ -150,14 +150,14 @@ class BLE:
         """Stop BLE advertising"""
         if self._advertising_task:
             self._advertising_task.cancel()
-        print("BLE advertising stopped")
+        # print("BLE advertising stopped")
 
     def close(self):
         """Close BLE connection"""
         self.stop_advertising()
         if self.connection:
             self.connection.close()
-        print("BLE closed")
+        # print("BLE closed")
 
 
 
