@@ -101,20 +101,43 @@ def on_ble_receive(data):
                 elif command in ["#dist", "#mode", "#laps", "#tries"]:
                     if not started:
                         if command == "#dist":
-                            distError = int(value)
-                            response = f"Distance error recived {distError}cm\n"
+                            # validate positive integer
+                            try:
+                                dist_val = int(value)
+                                if dist_val > 0:
+                                    distError = dist_val
+                                    response = f"Distance error received {distError}cm\n"
+                                else:
+                                    response = "Distance error must be greater than zero.\n"
+                            except ValueError:
+                                response = "Distance error must be an integer.\n"
                         elif command == "#mode":
-                            mode = value.lower()
-                            if mode in ["rally", "circuit"]:
+                            tmpMode = value.lower()
+                            if tmpMode in ["rally", "circuit"]:
+                                mode = tmpMode
                                 response = f"Mode updated to {mode}\n"
                             else:
                                 response = "Invalid mode. Use 'rally' or 'circuit'\n"
                         elif command == "#laps":
-                            laps = int(value)
-                            response = f"Laps updated to {laps}\n"
+                            try:
+                                laps_val = int(value)
+                                if laps_val > 0:
+                                    laps = laps_val
+                                    response = f"Laps updated to {laps}\n"
+                                else:
+                                    response = "Laps number must be greater than zero.\n"
+                            except ValueError:
+                                response = "Laps number must be an integer.\n"
                         elif command == "#tries":
-                            tries = int(value)
-                            response = f"Tries updated to {tries}\n"
+                            try:
+                                tries_val = int(value)
+                                if tries_val > 0:
+                                    tries = tries_val
+                                    response = f"Tries updated to {tries}\n"
+                                else:
+                                    response = "Tries number must be greater than zero.\n"
+                            except ValueError:
+                                response = "Tries number must be an integer.\n"
                     else:
                         response = "Cannot change configuration while a session is active. Please reset first.\n"
                 else: # usage instructions for invalid command
