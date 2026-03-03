@@ -14,11 +14,29 @@ leds = None
 
 # --------configuration variables----------
 distError = 0  # Default distance error in cm
-mode = "rally"  # Default mode
+mode = "circuit"  # Default mode ("rally" or "circuit")
 laps = 3       # Default number of laps
 tries = 3      # Default number of tries
 
 wait_time = 2000  # in ms
+
+# --------mode configuration----------
+mode_config = {
+    "rally": {
+        "started_msg": "STARTED RALLY MODE",
+        "counter_format": "TRY {}",
+        "finish_format": "TRY {}",
+        "counter_var_name": "current_try",
+        "max_var_name": "tries",
+    },
+    "circuit": {
+        "started_msg": "STARTED CIRCUIT MODE",
+        "counter_format": "LAP: {}",
+        "finish_format": "LAP: {}",
+        "counter_var_name": "current_lap",
+        "max_var_name": "laps",
+    }
+}
 
 # --------state variables----------
 started = False
@@ -30,16 +48,26 @@ temporal_time = 0
 current_time = 0
 previous_time = 0
 
+direction = 0 # 0 when car passes in front of sensor for the first time, 1 when returns, used only in rally mode to count tries
+
 #--------auxiliar functions---------
 
 def reset_state():
     """Reset the state variables for a new measurement session"""
     global started, finished
     global current_try, current_lap
+    global temporal_time, current_time, previous_time
+    global direction
     started = False
     finished = False
     current_try = 0
     current_lap = 0
+
+    temporal_time = 0
+    current_time = 0
+    previous_time = 0
+
+    direction = 0
 
 def format_time(ms:int) -> str:
     """Format time in milliseconds to a string MM:SS.sss"""
@@ -64,36 +92,38 @@ def on_ble_receive(data):
                 command = command.strip().lower()
                 value = value.strip()
                 
-                if command == "#dist":
-                    distError = int(value)
-                    response = f"Distance error recived {distError}cm\n"
-                elif command == "#mode":
-                    mode = value.lower()
-                    if mode in ["rally", "circuit"]:
-                        response = f"Mode updated to {mode}\n"
-                    else:
-                        response = "Invalid mode. Use 'rally' or 'circuit'\n"
-                elif command == "#laps":
-                    laps = int(value)
-                    response = f"Laps updated to {laps}\n"
-                elif command == "#tries":
-                    tries = int(value)
-                    response = f"Tries updated to {tries}\n"
-                elif command == "#config":
+                if command == "#config":
                     response = (f"Current Config - Distance Error: {distError}cm, "
                                 f"Mode: {mode}, Laps: {laps}, Tries: {tries}\n")
                 elif command == "#reset":
                     reset_state()
                     response = "State has been reset for a new session.\n"
-                else:
-                    # usage instructions
+                elif command in ["#dist", "#mode", "#laps", "#tries"]:
+                    if not started:
+                        if command == "#dist":
+                            distError = int(value)
+                            response = f"Distance error recived {distError}cm\n"
+                        elif command == "#mode":
+                            mode = value.lower()
+                            if mode in ["rally", "circuit"]:
+                                response = f"Mode updated to {mode}\n"
+                            else:
+                                response = "Invalid mode. Use 'rally' or 'circuit'\n"
+                        elif command == "#laps":
+                            laps = int(value)
+                            response = f"Laps updated to {laps}\n"
+                        elif command == "#tries":
+                            tries = int(value)
+                            response = f"Tries updated to {tries}\n"
+                    else:
+                        response = "Cannot change configuration while a session is active. Please reset first.\n"
+                else: # usage instructions for invalid command
                     response = ("Invalid command. Use:\n"
                                 "#dist distance error in cm\n"
                                 "#mode rally/circuit\n"
                                 "#laps laps number\n"
                                 "#tries tries number\n"
                                 "#config gives current config\n")
-
                 if ble:
                     ble.send(response)
                     uasyncio.create_task(leds.pluseFlash(leds.GREEN, 100))
@@ -122,6 +152,55 @@ async def do_send(messages):
             ble.send(data)
         await uasyncio.sleep(0.2)
 
+async def handle_session_start(mode_name):
+    """Handle session start messaging and LED feedback for both modes"""
+    global tries, laps, direction
+    
+    config = mode_config[mode_name]
+    message = config["started_msg"] + "\n"
+    message += f"Number of {config['max_var_name']}: {tries if config['max_var_name'] == 'tries' else laps}\n"
+    
+    if mode_name == "rally":
+        direction = 0  # reset direction at start
+    
+    if leds:
+        await leds.pluseFlash(leds.GREEN, 300)
+    
+    return message
+
+async def handle_session_finish(counter_value, current_time_ms):
+    """Handle session finish messaging and LED feedback for both modes"""
+    global finished, mode
+    
+    config = mode_config[mode]
+    messages_to_add = []
+    
+    if not finished:
+        # Add the final counter message
+        final_message = f"{config['finish_format'].format(counter_value + 1)}  Time:  {format_time(current_time_ms)}\n"
+        messages_to_add.append(final_message)
+    
+    finished = True
+    messages_to_add.append("FINISHED !!!\n")
+    
+    if leds:
+        await leds.flash(leds.GREEN, 100)
+    
+    return messages_to_add
+
+async def handle_counter_increment(counter_value, max_value, current_time_ms):
+    """Handle counter increment and message formatting for both modes"""
+    global mode
+    
+    config = mode_config[mode]
+    
+    if counter_value < max_value - 1:
+        new_counter = counter_value + 1
+        message = f"{config['counter_format'].format(new_counter)}  Time:  {format_time(current_time_ms)}\n"
+        return new_counter, message
+    else:
+        return counter_value, None
+
 async def measureForever(ult:ultrasonic,messages:list[str]):
     """Coroutine to measure distance forever and handle timing logic"""
         
@@ -129,6 +208,7 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
     global temporal_time, current_time, previous_time
     global current_try, current_lap
     global mode, tries, laps
+    global direction
 
     # if holded infront of sensor wait until removed
     on_sensor = False
@@ -163,9 +243,7 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                     # Leaved sensor or pass infront , send feedback to BT 
                     if not started and not finished:
                         started = True
-                        message = "STARTED\n"
-                        if leds:
-                            await leds.pluseFlash(leds.GREEN, 100)
+                        message = await handle_session_start(mode)
 
                     elif started and not finished:
 
@@ -179,45 +257,38 @@ async def measureForever(ult:ultrasonic,messages:list[str]):
                             await leds.pluseFlash(leds.YELLOW, 100)
 
                         if mode == "rally":
-
-                            if current_try < tries-1:
-                                current_try += 1
-                                message = f"TRY {current_try}  Time:  {format_time(current_time)}\n"
-                            else:
-
-                                if not finished:
-                                    # finishing message
-                                    message = f"TRY {current_try+1}  Time:   {format_time(current_time)}\n"
-                                    messages.append(message)
-
-                                finished = True
-
-                                message = f"FINISHED !!!\n"
-
-                                if leds:
-                                    await leds.flash(leds.GREEN, 100)
+                            # print(f"[DEBUG] Rally mode - direction: {direction}, current_try: {current_try}, tries: {tries}")
+                            if direction == 1: # returned 
+                                direction = 0
+                                current_try, counter_msg = await handle_counter_increment(current_try, tries, current_time)
+                                
+                                if counter_msg:
+                                    message = counter_msg
+                                else:
+                                    # Reached max tries, handle finish
+                                    finish_messages = await handle_session_finish(current_try, current_time)
+                                    for msg in finish_messages:
+                                        messages.append(msg)
+                                    message = None  # Don't append again at the end
+                            elif direction == 0: # passed infront
+                                direction = 1
+                                message = None  # Don't send message on first pass
 
                         elif mode == "circuit":
-
-                            if current_lap < laps-1:
-                                current_lap += 1
-                                message = f"LAP:  {current_lap}  Time:  {format_time(current_time)}\n"
+                            current_lap, counter_msg = await handle_counter_increment(current_lap, laps, current_time)
+                            
+                            if counter_msg:
+                                message = counter_msg
                             else:
+                                # Reached max laps, handle finish
+                                finish_messages = await handle_session_finish(current_lap, current_time)
+                                for msg in finish_messages:
+                                    messages.append(msg)
+                                message = None  # Don't append again at the end
 
-                                if not finished:
-                                    # finishing message
-                                    message = f"LAP: {current_lap+1}  Time:  {format_time(current_time)}\n"
-                                    messages.append(message)
-
-                                finished = True
-
-                                message = f"FINISHED !!!\n"
-
-                                if leds:
-                                    await leds.flash(leds.GREEN, 100)
-
-                    # always queue the message
-                    messages.append(message)
+                    # queue the message if it exists
+                    if message is not None:
+                        messages.append(message)
                     
                 else:
                     # still on sensor , do not register multiple times
@@ -253,7 +324,7 @@ async def main():
     # Initialize Bluetooth (aioble handles async internally)
     # print("creating BLE service")
     ble = BLE(name="ESP32-Cronometro", rx_callback=on_ble_receive)
-    await leds.flash(leds.BLUE,100)
+    await leds.flash(leds.BLUE,500)
     leds.turnOff()
     
     # print('phase 2 , calibrate ultrasonic sensor , plese conect via bluetooth to configure')
